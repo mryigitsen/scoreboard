@@ -22,7 +22,7 @@
 
 ## 技术栈
 * 主要算法结构——JavaScript
-* 可视化——Bootstrap 4+HTML+CSS
+* 可视化——Bootstrap 5+HTML+CSS
 * 在原先HTML界面的基础上，运用Bootstrap组件增强可视化体验
 ## 项目结构
 * 网页主文件 `index.html`
@@ -43,7 +43,7 @@
   * `Controller` 控制器类表示
     ```js
     function Controller(instructions){
-      this.clock = -1;     // 系统时钟
+      this.clock = 0;     // 系统时钟
       this.maxFetchSize = 10;     // 模拟器一次最多执行指令的数量
       this.instructions = instructions;   // 需要执行的指令
       this.fetched = [];  // 已经准备好且可以运行的指令列表
