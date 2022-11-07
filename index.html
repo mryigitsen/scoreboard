@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title>记分牌算法模拟</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="./lib/css/bootstrap.min.css" rel="stylesheet">
+    <script src="./lib/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="./lib/fonts/bootstrap-icons.css">
+    <style>
+        #app-nav {
+            background: rgba(248,249,250,0.7);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+        }
+        .reg-cell{
+            min-height: 1.5em;
+            height: 1.5em
+        }
+    </style>
+    <script src="simulate.js"></script>
+    <script src="app.js"></script>
+</head>
+
+<body>
+
+<nav class="navbar sticky-top" id="app-nav">
+    <div class="container-fluid">
+        <h1 class="navbar-brand ms-3">
+            记分牌算法模拟程序
+        </h1>
+        <span>时钟周期：<span id="clockNum" class="font-weight-bold">--</span></span>
+        <div class="btn-group me-3" role="group">
+            <button type="button" class="btn btn-success disabled" id="continue">
+                <i class="bi bi-skip-forward me-1"></i>Continue
+            </button>
+            <button type="button" class="btn btn-warning disabled" id="pause">
+                <i class="bi bi-pause me-1"></i>Pause
+            </button>
+            <button type="button" class="btn btn-danger disabled" id="reset">
+                <i class="bi bi-stop me-1"></i>Reset
+            </button>
+        </div>
+    </div>
+</nav>
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="end-toast">
+        <div class="toast-header">
+            <strong class="me-auto">Scoreboard</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            记分牌算法已演示完毕！请输入新的指令以开始下一轮演示！
+        </div>
+    </div>
+</div>
+<div class="my-4"></div>
+<div class="row">
+    <div class="col-md-4 offset-md-1">
+        <div class="row">
+            <div class="col-md-8">
+                <h3 class="text-center my-2">New Instructions</h3>
+            </div>
+            <div class="col-md-4">
+                <div class="disabled-btn-wrapper" tabindex="0" data-toggle="tooltip" data-placement="bottom" title="加载当前文本框内指令">
+                    <button type="button" class="btn btn-success my-2" id="load">
+                        <i class="bi bi-play"></i>Load
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <textarea class="form-control" style="width: 100%; height: 15em; margin: auto"
+                      id="new_instructions" autofocus></textarea>
+            <label for="new_instructions" class="invisible">Instructions</label>
+        </div>
+    </div>
+    <div class="col-md-4 offset-md-2">
+        <div class="row">
+            <h3 class="text-center my-2">Unloaded Instructions
+                <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                      title="尚未加载的指令列表，将要加载从上向下数的第一条"><i
+                        class="bi bi-question-circle h-75 w-75" style="font-size:60%"></i>
+                </span>
+            </h3>
+        </div>
+        <div class="row" style="height: 15em; overflow: auto;" id="all_instructions">
+            <div id="unloaded_instruction_placeholder">
+                <p class="text-center align-middle text-secondary">请点击Load按钮加载指令，这里才会显示内容</p>
+            </div>
+        </div>
+    </div>
+</div>
+<hr/>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <h3 class="text-center my-2 py-1">Instruction Status
+                <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-trigger="click focus"
+                      title="当前执行的指令处于哪一个状态"><i class="bi bi-question-circle h-75 w-75"
+                                                              style="font-size:60%"></i>
+                </span>
+            </h3>
+            <div class="table-display-area" style="height: 350px; overflow: auto">
+                <table class="table table-hover table-striped table-bordered thead-light">
+                    <thead>
+                    <tr>
+                        <th class="col-md-4" scope="col" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="当前执行的指令">Instruction
+                        </th>
+                        <th class="col-md-2" scope="col" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-html="true"
+                            title="<b>发射</b>（Issue,ID1）状态，通常用于解码指令，检查结构冒险">Issue
+                        </th>
+                        <th class="col-md-2" scope="col" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-html="true"
+                            title="<b>取数</b>（Operand,ID2）状态，等待数值准备好（解决RAW冒险），然后读取数值">Operand
+                        </th>
+                        <th class="col-md-2" scope="col" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-html="true"
+                            title="<b>执行</b>（Execute,EX）状态，执行计算过程">Execution
+                        </th>
+                        <th class="col-md-2" scope="col" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-html="true"
+                            title="<b>写回</b>（Write result,WB）状态，如果别的指令不需要读当前计算结果即将写入的寄存器（不出现WAR冒险），
+                            就将结果写回到寄存器堆，并清空记分牌信息">Write
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody id="instruction_table" class="table-group-divider">
+                    <tr id="instruction_status_table_placeholder">
+                        <td colspan="11" class="table-secondary text-center align-middle"
+                            style="height: 10em">
+                            <p style="font-size: 1.5em">请点击Load按钮加载指令，这里才会显示内容</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6 table-responsive">
+            <h3 class="text-center my-2 py-1">Registers Status
+                <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-trigger="click focus"
+                      title="寄存器结果状态。主要记录对于某一个寄存器是否有部件正准备写入数据"><i
+                        class="bi bi-question-circle h-75 w-75" style="font-size:60%"></i>
+                </span>
+            </h3>
+            <div class="row">
+                <table class="table table-hover table-striped table-bordered">
+                    <thead>
+                    <tr>
+                        <th>R0</th>
+                        <th>R1</th>
+                        <th>R2</th>
+                        <th>R3</th>
+                        <th>R4</th>
+                        <th>R5</th>
+                        <th>R6</th>
+                        <th>R7</th>
+                        <th>R8</th>
+                        <th>R9</th>
+                        <th>R10</th>
+                        <th>R11</th>
+                        <th>R12</th>
+                        <th>R13</th>
+                        <th>R14</th>
+                        <th>R15</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td id="R0" class="reg-cell"></td>
+                        <td id="R1" class="reg-cell"></td>
+                        <td id="R2" class="reg-cell"></td>
+                        <td id="R3" class="reg-cell"></td>
+                        <td id="R4" class="reg-cell"></td>
+                        <td id="R5" class="reg-cell"></td>
+                        <td id="R6" class="reg-cell"></td>
+                        <td id="R7" class="reg-cell"></td>
+                        <td id="R8" class="reg-cell"></td>
+                        <td id="R9" class="reg-cell"></td>
+                        <td id="R10" class="reg-cell"></td>
+                        <td id="R11" class="reg-cell"></td>
+                        <td id="R12" class="reg-cell"></td>
+                        <td id="R13" class="reg-cell"></td>
+                        <td id="R14" class="reg-cell"></td>
+                        <td id="R15" class="reg-cell"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row">
+                <table class="table table-hover table-striped table-bordered">
+                    <thead>
+                    <tr>
+                        <th>R16</th>
+                        <th>R17</th>
+                        <th>R18</th>
+                        <th>R19</th>
+                        <th>R20</th>
+                        <th>R21</th>
+                        <th>R22</th>
+                        <th>R23</th>
+                        <th>R24</th>
+                        <th>R25</th>
+                        <th>R26</th>
+                        <th>R27</th>
+                        <th>R28</th>
+                        <th>R29</th>
+                        <th>R30</th>
+                        <th>R31</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td id="R16" class="reg-cell"></td>
+                        <td id="R17" class="reg-cell"></td>
+                        <td id="R18" class="reg-cell"></td>
+                        <td id="R19" class="reg-cell"></td>
+                        <td id="R20" class="reg-cell"></td>
+                        <td id="R21" class="reg-cell"></td>
+                        <td id="R22" class="reg-cell"></td>
+                        <td id="R23" class="reg-cell"></td>
+                        <td id="R24" class="reg-cell"></td>
+                        <td id="R25" class="reg-cell"></td>
+                        <td id="R26" class="reg-cell"></td>
+                        <td id="R27" class="reg-cell"></td>
+                        <td id="R28" class="reg-cell"></td>
+                        <td id="R29" class="reg-cell"></td>
+                        <td id="R30" class="reg-cell"></td>
+                        <td id="R31" class="reg-cell"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row">
+                <table class="table table-hover table-striped table-bordered">
+                    <thead>
+                    <tr>
+                        <th>F0</th>
+                        <th>F1</th>
+                        <th>F2</th>
+                        <th>F3</th>
+                        <th>F4</th>
+                        <th>F5</th>
+                        <th>F6</th>
+                        <th>F7</th>
+                        <th>F8</th>
+                        <th>F9</th>
+                        <th>F10</th>
+                        <th>F11</th>
+                        <th>F12</th>
+                        <th>F13</th>
+                        <th>F14</th>
+                        <th>F15</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td id="F0" class="reg-cell"></td>
+                        <td id="F1" class="reg-cell"></td>
+                        <td id="F2" class="reg-cell"></td>
+                        <td id="F3" class="reg-cell"></td>
+                        <td id="F4" class="reg-cell"></td>
+                        <td id="F5" class="reg-cell"></td>
+                        <td id="F6" class="reg-cell"></td>
+                        <td id="F7" class="reg-cell"></td>
+                        <td id="F8" class="reg-cell"></td>
+                        <td id="F9" class="reg-cell"></td>
+                        <td id="F10" class="reg-cell"></td>
+                        <td id="F11" class="reg-cell"></td>
+                        <td id="F12" class="reg-cell"></td>
+                        <td id="F13" class="reg-cell"></td>
+                        <td id="F14" class="reg-cell"></td>
+                        <td id="F15" class="reg-cell"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row">
+                <table class="table table-hover table-striped table-bordered">
+                    <thead>
+                    <tr>
+                        <th>F16</th>
+                        <th>F17</th>
+                        <th>F18</th>
+                        <th>F19</th>
+                        <th>F20</th>
+                        <th>F21</th>
+                        <th>F22</th>
+                        <th>F23</th>
+                        <th>F24</th>
+                        <th>F25</th>
+                        <th>F26</th>
+                        <th>F27</th>
+                        <th>F28</th>
+                        <th>F29</th>
+                        <th>F30</th>
+                        <th>F31</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td id="F16" class="reg-cell"></td>
+                        <td id="F17" class="reg-cell"></td>
+                        <td id="F18" class="reg-cell"></td>
+                        <td id="F19" class="reg-cell"></td>
+                        <td id="F20" class="reg-cell"></td>
+                        <td id="F21" class="reg-cell"></td>
+                        <td id="F22" class="reg-cell"></td>
+                        <td id="F23" class="reg-cell"></td>
+                        <td id="F24" class="reg-cell"></td>
+                        <td id="F25" class="reg-cell"></td>
+                        <td id="F26" class="reg-cell"></td>
+                        <td id="F27" class="reg-cell"></td>
+                        <td id="F28" class="reg-cell"></td>
+                        <td id="F29" class="reg-cell"></td>
+                        <td id="F30" class="reg-cell"></td>
+                        <td id="F31" class="reg-cell"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<h3 class="text-center my-2 py-1">Functional Unit
+    <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-trigger="click focus"
+          title="表明功能部件FU的执行状态"><i class="bi bi-question-circle h-75 w-75" style="font-size:60%"></i>
+    </span>
+</h3>
+<div class="row" style="min-height: 175px">
+    <div class="col-md-8 offset-md-2">
+        <table class="table table-hover table-bordered thead-light">
+            <thead>
+            <tr>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="单元执行时间">Time</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="功能单元名称">Name</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="部件是否处于忙碌状态">Busy</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="单元内所运行的指令">Op</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="目标寄存器">Fi</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="源寄存器1">Fj</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="源寄存器2">Fk</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="源寄存器1没准备好，部件该从哪里获得数据">Qj</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="源寄存器2没准备好，部件该从哪里获得数据">Qk</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="源寄存器1是否已准备好">Rj</th>
+                <th data-bs-toggle="tooltip" data-bs-placement="top" title="源寄存器2是否已准备好">Rk</th>
+            </tr>
+            </thead>
+            <tbody id="function_unit" class="table-group-divider">
+            <tr id="functional_unit_table_placeholder">
+                <td colspan="11" height="125" class="table-secondary text-center" style="vertical-align: middle">
+                    <p style="font-size: 2em">请点击Load按钮加载指令，这里才会显示内容</p>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
