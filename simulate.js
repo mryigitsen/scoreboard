@@ -283,7 +283,7 @@ function Controller(instructions) {
         "MULT": ["Mult1", "Mult2"],
         "SUBD": ["Add1", "Add2"],
         "DIVD": ["Divide"],
-        "ADDD": ["Add1", "Add2]
+        "ADDD": ["Add1", "Add2"]
     }
     // The registers of this simulator.
     this.registers = {
