@@ -350,7 +350,7 @@ let callback = function () {
                 elem.textContent = ''
             }
         }
-        for (let name of ["Integer", "Mult1", "Mult2", "Add", "Divide"]) {
+        for (let name of ["Integer", "Mult1", "Mult2", "Add1", "Add2", "Divide"]) {
             let c = document.getElementById(name).classList
             if (c) {
                 c.length = 0
