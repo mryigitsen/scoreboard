@@ -11,7 +11,7 @@ let callback = function () {
     // timeout between two instructions
     const TimeoutVal = 2000;
     // Pre-instructions
-    let source = ["LD F4 8 R2", "MULTD F2 F0 F4", "LD F0 16 R3",
+    let source = ["LD F4 8 R2", "MULT F2 F0 F4", "LD F0 16 R3",
         "SUBD F6 F0 F2", "ADDD F0 F4 F4"]
 
 
