@@ -273,16 +273,17 @@ function Controller(instructions) {
         "Integer": new FunctionUnit("Integer", 1),
         "Mult1": new FunctionUnit("Mult1", 10),
         "Mult2": new FunctionUnit("Mult2", 10),
-        "Add": new FunctionUnit("Add", 2),
+        "Add1": new FunctionUnit("Add1", 2),
+        "Add2": new FunctionUnit("Add2", 2),
         "Divide": new FunctionUnit("Divide", 40)
     };
     // Instruction's correspond function unit.
     this.opToFunctionUnit = {
         "LD": ["Integer"],
         "MULT": ["Mult1", "Mult2"],
-        "SUBD": ["Add"],
+        "SUBD": ["Add1", "Add2"],
         "DIVD": ["Divide"],
-        "ADDD": ["Add"]
+        "ADDD": ["Add1", "Add2]
     }
     // The registers of this simulator.
     this.registers = {
